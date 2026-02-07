@@ -1,5 +1,8 @@
 import argparse
 from socket import *
+import threading
+
+lock=threading.Lock()
 
 def get_arguments():
     parser = argparse.ArgumentParser(prog='portscanner',
@@ -32,37 +35,12 @@ def connect(host, port):
     finally:
         s.close()
 
-def port_scan(host, port_string):
-    try:
-        target_ip = gethostbyname(host)
-    except:
-        print(f'[-] Cannot resolve {host}: unknown host')
-        return
-
-    setdefaulttimeout(1)
-    port_list = parse_ports(port_string)
-
-    if not port_list:
-        print('[!] No valid ports to scan')
-        return
-
-    print(f'[*] Scanning {len(port_list)} port(s) on {host} ({target_ip})')
-
-    open_ports = []
-    banners = []
-
-    for p in port_list:
-        print(f'\n[+] Scanning port {p}')
-        is_open, banner = connect(target_ip, p)
-        if is_open:
-            open_ports.append(p)
-            banners.append(banner)
-
-    if open_ports:
-        write_result(host, open_ports, banners)
-        print(f'\n[*] Results saved to result.txt')
-    else:
-        print(f'\n[*] No open ports found')
+def scan_port(host, port, open_ports, banners):
+    is_open, banner = connect(host, port)
+    if is_open:
+        with lock:
+            open_ports.append(port)
+            banners.append((port, banner))
 
 def parse_ports(port_string):
     """
@@ -121,9 +99,50 @@ def write_result(host, ports, results):
                 f.write(f'Banner: No banner received\n')
             f.write('-' * 50 + '\n')
 
+
+def port_scan(host, port_string):
+    try:
+        target_ip = gethostbyname(host)
+    except:
+        print(f'[-] Cannot resolve {host}: unknown host')
+        return
+
+    setdefaulttimeout(1)
+    port_list = parse_ports(port_string)
+
+    if not port_list:
+        print('[!] No valid ports to scan')
+        return
+
+    print(f'[*] Scanning {len(port_list)} port(s) on {host} ({target_ip})')
+
+    open_ports = []
+    banners = []
+    threads = []
+
+    for p in port_list:
+        t = threading.Thread(target=scan_port, args=(target_ip, p, open_ports, banners))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    if open_ports:
+        banners.sort(key=lambda x: x[0])
+        sorted_ports = [p for p, _ in banners]
+        sorted_banners = [b for _, b in banners]
+
+        write_result(host, sorted_ports, sorted_banners)
+        print(f'\n[*] Results saved to result.txt')
+    else:
+        print(f'\n[*] No open ports found')
+
+
 def main():
     target_host, target_port = get_arguments()
     port_scan(target_host, target_port)
+
 
 if __name__ == '__main__':
     main()

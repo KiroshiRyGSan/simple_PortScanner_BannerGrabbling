@@ -1,0 +1,40 @@
+# --- AMBIENTI VIRTUALI ---
+# Esclude la cartella venv, .venv, env e simili
+venv/
+.venv/
+env/
+venv.bak/
+ENV/
+
+# --- PYTHON ---
+# File compilati (non servono su GitHub)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# --- IDE (PyCharm, VS Code, Antigravity/IDX) ---
+# Impostazioni specifiche di PyCharm
+.idea/
+# Impostazioni di VS Code
+.vscode/
+*.swp
+*.bak
+
+# --- SISTEMA OPERATIVO ---
+# File temporanei di Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- DATI E LOG ---
+# File di log e database locali (es. SQLite)
+*.log
+*.sqlite
+*.db
+# Evita di caricare dati sensibili o pacchetti scaricati
+dist/
+build/
+*.egg-info/
